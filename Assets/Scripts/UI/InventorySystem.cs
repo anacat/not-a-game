@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class InventorySystem : MonoBehaviour 
 {
-	public GameObject inventoryGrid;
+	public GridLayoutGroup inventoryGrid;
 	public GameObject itemPrefab;
 	public Inventory inventory;
 
@@ -16,11 +16,21 @@ public class InventorySystem : MonoBehaviour
 
 	public void PopulateGrid()
 	{
-		foreach(InventoryItem i in inventory.listOfItems)
+		inventoryGrid.enabled = true;
+		
+		foreach(InventoryItem i in inventory.GetListOfItems())
 		{
 			var obj = Instantiate(itemPrefab);
 			obj.transform.SetParent(inventoryGrid.transform, false);
-			obj.GetComponent<Image>().sprite = i.GetItemSprite();
+			obj.GetComponent<DraggableItem>().SetObject(i);
 		}
+
+		StartCoroutine(DisableGrid());
+	}
+
+	private IEnumerator DisableGrid()
+	{
+		yield return new WaitForEndOfFrame();
+		inventoryGrid.enabled = false;
 	}
 }

@@ -4,5 +4,21 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Inventory/Inventory")]
 public class Inventory : ScriptableObject 
 {
-	public List<InventoryItem> listOfItems;
+	[SerializeField]
+	private List<InventoryItem> _listOfItems;
+
+	public List<InventoryItem> GetListOfItems()
+	{
+		return _listOfItems;
+	}
+
+	public void AddItem(InventoryItem item) 
+	{
+		_listOfItems.Add(item);
+	}
+
+	public void RemoveItem(InventoryItem item)
+	{
+		_listOfItems.Remove(item);
+	}
 }

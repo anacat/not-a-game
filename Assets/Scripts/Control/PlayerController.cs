@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour 
 {
+	public Inventory inventory;
 	public BoolVariable canPlayerMove;
 	public AnimationCurve movementCurve;
 
@@ -13,8 +14,22 @@ public class PlayerController : MonoBehaviour
 		//strict clicks
 		if(Input.GetButtonDown("Fire1") && canPlayerMove.GetValue())
 		{
-			StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
+			CheckClick();
 		}
+	}
+
+	private void CheckClick()
+	{
+		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
+        RaycastHit hit;
+
+		if (Physics.Raycast(ray, out hit, 100))
+		{
+			if (hit.collider.CompareTag("Enemy"))
+			{
+				StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
+			}
+		}      
 	}
 
 	public IEnumerator MovePlayer(Vector2 position)
