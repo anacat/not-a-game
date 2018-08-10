@@ -3,7 +3,7 @@
 [CreateAssetMenu(menuName = "Variables/Bool")]
 public class BoolVariable : ScriptableObject
 {
-	[SerializeField]
+    [SerializeField]
     private bool value;
 
     public void SetValue(bool value)
@@ -13,6 +13,6 @@ public class BoolVariable : ScriptableObject
 
     public bool GetValue()
     {
-		return this.value;
+        return this.value;
     }
 }
