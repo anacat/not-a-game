@@ -1,14 +1,20 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using System.Linq;
 
 public class PlayerController : MonoBehaviour
 {
     public BoolVariable canPlayerMove;
-    public AnimationCurve movementCurve;
+
+    private Animator _animator;
+    private SpriteRenderer _spriteRenderer;
+    private int _pointerID = -1;
+
+    private void Awake()
+    {
+        _animator = GetComponent<Animator>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+    }
 
     private void Update()
     {
@@ -21,7 +27,12 @@ public class PlayerController : MonoBehaviour
     //verifies if player can move and if it's not clicking on UI 
     private bool CanMovePlayer()
     {
-        return Input.GetButtonDown("Fire1") && canPlayerMove.GetValue() && !EventSystem.current.IsPointerOverGameObject();
+        if (Input.touchCount > 0)
+        {
+            _pointerID = Input.GetTouch(0).fingerId;
+        }
+
+        return Input.GetButtonDown("Fire1") && canPlayerMove.GetValue() && !EventSystem.current.IsPointerOverGameObject(_pointerID);
     }
 
     private void CheckClick()
@@ -37,7 +48,7 @@ public class PlayerController : MonoBehaviour
             {
                 if (c.collider.CompareTag("Ghost"))
                 {
-                    StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition), 0.7f));
+                    StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
 
                     foundGhost = true;
                     break;
@@ -45,43 +56,52 @@ public class PlayerController : MonoBehaviour
                 else if (c.collider.CompareTag("CoupleGhost"))
                 {
                     AngryCoupleController ag = c.collider.gameObject.GetComponent<AngryCoupleController>();
-                    ag.StartStoryTime();
+                    ag.MoveAndRunStory();
 
                     foundGhost = true;
                     break;
                 }
             }
 
-            //does full movement if it's not a ghost
             if (!foundGhost)
             {
-                StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition), 1f));
+                StartCoroutine(MovePlayer(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
             }
         }
     }
 
-    public IEnumerator MovePlayer(Vector2 position, float percentage)
+    public IEnumerator MovePlayer(Vector2 position)
     {
         canPlayerMove.SetValue(false);
+        _animator.SetBool("walking", true);
 
-        float interpolationTime = 1f;
-        float timeStarted;
-        float deltaTime = 0;
-        float percentageDone = 0;
-        Vector2 initPosition = transform.localPosition;
-
-        timeStarted = Time.time;
-
-        while (percentageDone < percentage)
+        if (position.x < transform.localPosition.x)
         {
-            deltaTime = Time.time - timeStarted;
-            percentageDone = deltaTime / interpolationTime;
+            _spriteRenderer.flipX = true;
+        }
+        else
+        {
+            _spriteRenderer.flipX = false;
+        }
 
-            transform.localPosition = Vector2.Lerp(initPosition, position, movementCurve.Evaluate(percentageDone));
+        while (Vector2.Distance(transform.localPosition, position) > 0)
+        {
+            transform.localPosition = Vector3.MoveTowards(transform.position, position, 0.1f);
 
             yield return null;
         }
 
         canPlayerMove.SetValue(true);
+        _animator.SetBool("walking", false);
+    }
+
+    public Animator GetAnimator()
+    {
+        return _animator;
+    }
+
+    public SpriteRenderer GetSpriteRenderer()
+    {
+        return _spriteRenderer;
     }
 }

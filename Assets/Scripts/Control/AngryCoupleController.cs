@@ -1,50 +1,54 @@
 ﻿using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(ItemTradeController))]
 public class AngryCoupleController : MonoBehaviour
 {
     public BoolVariable hasShownInitialScene;
-    public Inventory playerInventory;
-    public InventorySystem inventorySystem;
     public BoolVariable canPlayerMove;
-    public GameController controller;
     public Animator storyTimeAnimator;
 
-    [Header("Items")]
-    public InventoryItem neededItem;
-    public InventoryItem returnedItem;
-
-    private PlayerController _playerController;
-    private Animator _ghostAnimator;
+    private ItemTradeController _itemController;
+    private bool _gaveItems;
+    private bool _isRecievingItem;
 
     private void Awake()
     {
-        _playerController = controller.player;
-        _ghostAnimator = GetComponent<Animator>();
+        _itemController = GetComponent<ItemTradeController>();
     }
 
-    private IEnumerator Move()
+    private void OnEnable()
     {
-        yield return _playerController.MovePlayer(transform.localPosition, 0.8f);
+        _itemController.RecieveItem += RecieveItemAction;
+    }
+
+    public void MoveAndRunStory()
+    {
+        StartCoroutine(RunActions());
+    }
+
+    private void Update()
+    {
+        if (hasShownInitialScene.GetValue() && _gaveItems && !_isRecievingItem)
+        {
+            _itemController.SpeechBubbleDistanceCheck();
+        }
+    }
+
+    private IEnumerator RunActions()
+    {
+        yield return _itemController.GetPlayer().MovePlayer(transform.localPosition);
 
         if (!hasShownInitialScene.GetValue())
         {
             yield return RunStoryTime();
         }
 
-        if (returnedItem != null)
+        if (_itemController.DidntGiveItems())
         {
-            _ghostAnimator.SetTrigger("interact");
-
-            yield return new WaitForSeconds(0.5f);
-
-            GivePlayerItem();
+            yield return _itemController.GiveItems();
+            _gaveItems = true;
         }
-    }
-
-    public void StartStoryTime()
-    {
-        StartCoroutine(Move());
     }
 
     private IEnumerator RunStoryTime()
@@ -62,37 +66,26 @@ public class AngryCoupleController : MonoBehaviour
         canPlayerMove.SetValue(true);
     }
 
-    private void GivePlayerItem()
+    private void RecieveItemAction(InventoryItem item, GameObject itemObject)
     {
-        playerInventory.AddItem(returnedItem);
-        inventorySystem.PopulateGrid();
-        returnedItem = null;
+        StartCoroutine(RecieveItemAnimation(item, itemObject));
     }
 
-    public bool RecieveItem(InventoryItem item, GameObject itemGameObject)
+    private IEnumerator RecieveItemAnimation(InventoryItem item, GameObject itemObject)
     {
-        if (neededItem == item)
-        {
-            StartCoroutine(RecieveItemAnimation(item, itemGameObject));
+        _isRecievingItem = true;
 
-            return true;
-        }
+        yield return _itemController.RecieveItemAnimation(item, itemObject, () => Debug.Log("Congrations"));
 
-        return false;
-    }
+        _itemController.neededItems.Clear();
 
-    private IEnumerator RecieveItemAnimation(InventoryItem item, GameObject itemGameObject)
-    {
-        _ghostAnimator.SetTrigger("interact");
-
-        yield return new WaitForSeconds(0.5f);
-
-        playerInventory.RemoveItem(item);
-        Destroy(itemGameObject);
-        inventorySystem.PopulateGrid();
-
-        Debug.Log("Congrations");
+        _isRecievingItem = false;
 
         //TODO: game end
+    }
+
+    private void OnDisable()
+    {
+        _itemController.RecieveItem -= RecieveItemAction;
     }
 }

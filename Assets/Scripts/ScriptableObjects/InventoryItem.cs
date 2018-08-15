@@ -8,6 +8,7 @@ public class InventoryItem : ScriptableObject
 
     [SerializeField]
     private Sprite itemSprite;
+    private GameObject _gameObject;
 
     public string GetItemName()
     {
@@ -17,5 +18,17 @@ public class InventoryItem : ScriptableObject
     public Sprite GetItemSprite()
     {
         return itemSprite;
+    }
+
+    public GameObject ItemGameObject
+    {
+        get
+        {
+            return _gameObject;
+        }
+        set
+        {
+            _gameObject = value;
+        }
     }
 }

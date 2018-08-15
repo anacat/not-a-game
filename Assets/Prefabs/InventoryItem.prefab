@@ -91,6 +91,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  canPlayerInteract: {fileID: 11400000, guid: 9f1c175baca166b4fb6a76f02044a409, type: 2}
 --- !u!222 &222442252213485666
 CanvasRenderer:
   m_ObjectHideFlags: 1

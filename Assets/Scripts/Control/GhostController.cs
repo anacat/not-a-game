@@ -1,107 +1,103 @@
-//Controls the puzzle momments in the game (where the player has to trade objects to gain other objects)
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
+[RequireComponent(typeof(ItemTradeController))]
 public class GhostController : MonoBehaviour
 {
-    public Inventory playerInventory;
-    public InventorySystem invertorySystem;
-    public GameController controller;
-
-    [Header("UI")]
-    public CanvasGroup speechBubble;
-    public Image item1;
-    public Image item2;
-
-    [Header("PuzzleItems")]
-    public List<InventoryItem> neededItems;
-    public List<InventoryItem> returnedItems;
-
-    private int _missingItems = 2;
+    private ItemTradeController _itemController;
     private Animator _animator;
-    private PlayerController _playerController;
+    private SpriteRenderer _spriteRenderer;
+    private int _missingItems;
+    private bool _isRecievingItem;
 
     private void Awake()
     {
-        item1.sprite = neededItems[0].GetItemSprite();
-        item2.sprite = neededItems[1].GetItemSprite();
-
+        _itemController = GetComponent<ItemTradeController>();
         _animator = GetComponent<Animator>();
-        _playerController = controller.player;
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        _missingItems = _itemController.neededItems.Count;
+    }
+
+    private void OnEnable()
+    {
+        _itemController.RecieveItem += GiveItemAction;
     }
 
     private void Update()
     {
-        SpeechBubbleDistanceCheck();
-    }
-
-    private void SpeechBubbleDistanceCheck()
-    {
-        if (speechBubble != null)
+        if (!_isRecievingItem)
         {
-            if (_animator.GetBool("speechbubble") && Vector2.Distance(_playerController.transform.position, transform.position) > 2)
-            {
-                _animator.SetBool("speechbubble", false);
-            }
-            else if (!_animator.GetBool("speechbubble") && Vector2.Distance(_playerController.transform.position, transform.position) < 2)
-            {
-                _animator.SetBool("speechbubble", true);
-            }
+            _itemController.SpeechBubbleDistanceCheck();
         }
     }
 
-    private IEnumerator GiveItems()
+    private void GiveItemAction(InventoryItem item, GameObject itemObject)
     {
-        _animator.SetTrigger("interact");
-
-        yield return new WaitForSeconds(0.5f); //wait for animation
-
-        Destroy(speechBubble.gameObject);
-
-        playerInventory.GetListOfItems().AddRange(returnedItems);
-        invertorySystem.PopulateGrid();
-
-        Destroy(this);
-    }
-
-    public bool RecieveItem(InventoryItem item, GameObject itemObject)
-    {
-        if (neededItems.Contains(item))
-        {
-            StartCoroutine(RecieveItemAnimation(item, itemObject));
-
-            return true;
-        }
-
-        return false;
+        StartCoroutine(RecieveItemAnimation(item, itemObject));
     }
 
     private IEnumerator RecieveItemAnimation(InventoryItem item, GameObject itemObject)
     {
-        _animator.SetTrigger("interact");
-
-        yield return new WaitForSeconds(0.5f);
-
         _missingItems--;
+        _itemController.canPlayerMove.SetValue(false);
+        _isRecievingItem = true;
 
-        playerInventory.RemoveItem(item);
-        Destroy(itemObject.gameObject);
+        yield return _itemController.RecieveItemAnimation(item, itemObject);
 
-        int n = neededItems.IndexOf(item);
-        if (n == 0)
-        {
-            Destroy(item1.gameObject);
-        }
-        else if (n == 1)
-        {
-            Destroy(item2.gameObject);
-        }
+        int n = _itemController.neededItems.IndexOf(item);
+
+        _itemController.DestroySpeechItem(n);
 
         if (_missingItems == 0)
         {
-            StartCoroutine(GiveItems());
+            _animator.SetBool("happy", true);
+
+            yield return _itemController.GiveItems();
+
+            _animator.SetBool("speechbubble", false);
+
+            yield return AnimationHelper.WaitForAnimation(_animator, 1);
+
+            _itemController.neededItems.Clear();
+            _itemController.DestroySpeechBubble();
+
+            yield return FadeOut();
+        }
+
+        _itemController.canPlayerMove.SetValue(true);
+        _isRecievingItem = false;
+
+        //Allows player to move again before destroying the gameObject
+        if (_missingItems == 0)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void OnDisable()
+    {
+        _itemController.RecieveItem -= GiveItemAction;
+    }
+
+    private IEnumerator FadeOut()
+    {
+        float timeStarted;
+        float timeToFade = 1f;
+        float deltaTime;
+        float percentageDone = 0;
+        float currentAlpha = _spriteRenderer.color.a;
+
+        timeStarted = Time.time;
+
+        while (percentageDone < 1)
+        {
+            deltaTime = Time.time - timeStarted;
+            percentageDone = deltaTime / timeToFade;
+
+            _spriteRenderer.color = new Vector4(_spriteRenderer.color.r, _spriteRenderer.color.g, _spriteRenderer.color.b, Mathf.Lerp(currentAlpha, 0, percentageDone));
+
+            yield return null;
         }
     }
 }

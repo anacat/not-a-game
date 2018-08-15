@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class DraggableItem : MonoBehaviour, IDragHandler, IEndDragHandler
 {
     public AnimationCurve movementCurve;
+    public BoolVariable canPlayerInteract;
 
     private InventoryItem _item;
     private Image _image;
@@ -38,32 +39,29 @@ public class DraggableItem : MonoBehaviour, IDragHandler, IEndDragHandler
     public void OnEndDrag(PointerEventData eventData)
     {
         Vector2 origin = Camera.main.ScreenToWorldPoint(eventData.position);
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.zero);
+        RaycastHit2D[] hit = Physics2D.RaycastAll(origin, Vector2.zero);
 
-        if (hit.collider == null || !IsGhostAndWantsThisItem(hit))
+        if (hit.Length != 0)
         {
-            StartCoroutine(GotoInitialPosition());
+            foreach (RaycastHit2D r in hit)
+            {
+                if ((r.collider.CompareTag("Ghost") || r.collider.CompareTag("CoupleGhost")) && !IsGhostAndWantsThisItem(r))
+                {
+                    StartCoroutine(GotoInitialPosition());
+                }
+            }
         }
     }
 
     private bool IsGhostAndWantsThisItem(RaycastHit2D hit)
     {
-        if (hit.collider.CompareTag("Ghost"))
+        if (canPlayerInteract.GetValue())
         {
-            var puzzleController = hit.collider.GetComponentInChildren<GhostController>(true);
+            var itemController = hit.collider.GetComponentInChildren<ItemTradeController>(true);
 
-            if (puzzleController != null)
+            if (itemController != null)
             {
-                return puzzleController.RecieveItem(_item, gameObject);
-            }
-        }
-        else if (hit.collider.CompareTag("CoupleGhost"))
-        {
-            var angryCoupleController = hit.collider.GetComponentInChildren<AngryCoupleController>(true);
-
-            if (angryCoupleController != null)
-            {
-                return angryCoupleController.RecieveItem(_item, gameObject);
+                return itemController.RecievedItem(_item, gameObject);
             }
         }
 
