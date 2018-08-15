@@ -4,16 +4,19 @@ using UnityEngine.EventSystems;
 
 public class PlayerController : MonoBehaviour
 {
+    public GameController gameController;
     public BoolVariable canPlayerMove;
 
     private Animator _animator;
     private SpriteRenderer _spriteRenderer;
     private int _pointerID = -1;
+    private AudioSource _audioSource;
 
     private void Awake()
     {
         _animator = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        _audioSource = GetComponent<AudioSource>();
     }
 
     private void Update()
@@ -61,6 +64,12 @@ public class PlayerController : MonoBehaviour
                     foundGhost = true;
                     break;
                 }
+                else if (c.collider.CompareTag("Door"))
+                {
+                    _animator.SetTrigger("npcInteract");
+                    gameController.doorController.OpenDoor();
+                    break;
+                }
             }
 
             if (!foundGhost)
@@ -74,6 +83,9 @@ public class PlayerController : MonoBehaviour
     {
         canPlayerMove.SetValue(false);
         _animator.SetBool("walking", true);
+        
+        _audioSource.Play();
+        _audioSource.loop = true;
 
         if (position.x < transform.localPosition.x)
         {
@@ -93,6 +105,8 @@ public class PlayerController : MonoBehaviour
 
         canPlayerMove.SetValue(true);
         _animator.SetBool("walking", false);
+
+        _audioSource.Stop();
     }
 
     public Animator GetAnimator()

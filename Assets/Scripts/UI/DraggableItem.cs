@@ -41,23 +41,38 @@ public class DraggableItem : MonoBehaviour, IDragHandler, IEndDragHandler
         Vector2 origin = Camera.main.ScreenToWorldPoint(eventData.position);
         RaycastHit2D[] hit = Physics2D.RaycastAll(origin, Vector2.zero);
 
+        Collider2D ghostCollider = null;
+
         if (hit.Length != 0)
         {
             foreach (RaycastHit2D r in hit)
             {
-                if ((r.collider.CompareTag("Ghost") || r.collider.CompareTag("CoupleGhost")) && !IsGhostAndWantsThisItem(r))
-                {
-                    StartCoroutine(GotoInitialPosition());
-                }
+               if((r.collider.CompareTag("Ghost") || r.collider.CompareTag("CoupleGhost")))
+               {
+                   ghostCollider = r.collider;
+                   break;
+               }
             }
+        }
+
+        if(ghostCollider != null)
+        {
+            if (!IsGhostAndWantsThisItem(ghostCollider))
+            {
+                StartCoroutine(GotoInitialPosition());
+            }
+        }
+        else 
+        {
+            StartCoroutine(GotoInitialPosition());
         }
     }
 
-    private bool IsGhostAndWantsThisItem(RaycastHit2D hit)
+    private bool IsGhostAndWantsThisItem(Collider2D collider)
     {
         if (canPlayerInteract.GetValue())
         {
-            var itemController = hit.collider.GetComponentInChildren<ItemTradeController>(true);
+            var itemController = collider.GetComponentInChildren<ItemTradeController>(true);
 
             if (itemController != null)
             {

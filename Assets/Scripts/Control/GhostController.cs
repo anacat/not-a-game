@@ -21,7 +21,7 @@ public class GhostController : MonoBehaviour
 
     private void OnEnable()
     {
-        _itemController.RecieveItem += GiveItemAction;
+        _itemController.RecieveItem += RecieveItemAction;
     }
 
     private void Update()
@@ -32,7 +32,7 @@ public class GhostController : MonoBehaviour
         }
     }
 
-    private void GiveItemAction(InventoryItem item, GameObject itemObject)
+    private void RecieveItemAction(InventoryItem item, GameObject itemObject)
     {
         StartCoroutine(RecieveItemAnimation(item, itemObject));
     }
@@ -77,7 +77,7 @@ public class GhostController : MonoBehaviour
 
     private void OnDisable()
     {
-        _itemController.RecieveItem -= GiveItemAction;
+        _itemController.RecieveItem -= RecieveItemAction;
     }
 
     private IEnumerator FadeOut()
